@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Keelson - automated image updates for Kubernetes</title>
+<meta name="description" content="Keelson watches your registry and rolls your Kubernetes workloads forward on your terms. Scoped writes that respect field ownership, tags of any length, and logs you can actually read.">
+<meta name="theme-color" content="#00101f">
+<link rel="icon" href="img/keelson-mark.svg" type="image/svg+xml">
+<link rel="preload" href="fonts/plex-condensed-700.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/plex-sans-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="css/site.css">
+</head>
+<body>
+
+<a class="skip-link" href="#overview">Skip to content</a>
+
+<header class="masthead">
+  <nav class="nav" aria-label="Primary">
+    <a class="brand" href="#overview" aria-label="Keelson, back to top">
+      <img src="img/keelson-lockup.svg" alt="Keelson" width="680" height="320">
+    </a>
+
+    <button class="burger" type="button"
+            aria-expanded="false" aria-controls="nav-menu" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+
+    <ul class="nav-menu" id="nav-menu">
+      <li><a href="#mission"><i>01</i>Our Mission</a></li>
+      <li><a href="#how"><i>02</i>How it works</a></li>
+      <li><a href="#strengths"><i>03</i>Strengths</a></li>
+      <li><a href="#install"><i>04</i>Install</a></li>
+      <li><a href="#docs"><i>05</i>Docs</a></li>
+      <li><a class="nav-out" data-bay="github"
+             href="https://github.com/keelson-pro/keelson#keelson">
+        <i>&#8599;</i>GitHub</a></li>
+    </ul>
+  </nav>
+</header>
+
+<!--
+  The keel: a hairline running the length of the page with a station node per
+  bay, filling as you scroll. Decorative and desktop only, so it is hidden from
+  assistive tech; the nav already conveys position. site.js places each node
+  from its bay's real offset.
+-->
+<div class="keel" aria-hidden="true">
+  <span class="keel-run"></span>
+  <b data-station="overview"></b>
+  <b data-station="mission"></b>
+  <b data-station="how"></b>
+  <b data-station="strengths"></b>
+  <!-- The five strengths get their own stations, but share one menu item, so
+       Strengths stays lit for the whole run of dots. Every station is the same
+       size and evenly spaced; site.js sets the positions. -->
+  <b data-station="logging"></b>
+  <b data-station="config"></b>
+  <b data-station="versions"></b>
+  <b data-station="updates"></b>
+  <b data-station="security"></b>
+  <b data-station="dropin"></b>
+  <b data-station="install"></b>
+  <b data-station="docs"></b>
+  <b data-station="github"></b>
+</div>
+
+<main>
+
+  <section id="overview" class="bay bay-hero">
+    <!--
+      A naval architecture drawing plate, and the first thing on the page. The
+      plate is deliberately light in both themes: the hull is #002052 and would
+      vanish against the dark ground, and CSS cannot restyle the fills of an
+      external SVG. Framing it as a drawing turns that constraint into the point.
+    -->
+    <figure class="plate">
+      <div class="plate-field">
+        <img src="img/keelson-mark.svg" alt="Keelson logo, a motor vessel in profile"
+             width="680" height="206" fetchpriority="high">
+        <span class="waterline"></span>
+      </div>
+      <figcaption>
+        <span class="fig">Fig. 1</span>
+        <span class="cap">Keelson, the back bone of your vessel.</span>
+      </figcaption>
+    </figure>
+
+    <div class="hero-title">
+      <h1>Keelson</h1>
+      <p class="tagline">Keep your workloads up-to-date.</p>
+    </div>
+  </section>
+
+  <section id="mission" class="bay">
+    <div class="bay-body">
+      <p class="eyebrow"><span>01</span> Our Mission</p>
+      <h2>Keelson's mission: great operator UX.</h2>
+      <p class="lead">
+        At its heart, an image updater is a simple piece of software, so it
+        follows that it should be simple to configure and simple to understand
+        what it has and has not done. Keelson aims to live up to those
+        expectations. Learn how below.
+      </p>
+
+      <ul class="missions">
+        <li>
+          <a href="#logging">
+            <b>Logging</b>
+            <span>Lean, useful info on the console, with complete detailed
+                  debug on disk inside the pod and auto rotated. No need to
+                  reconfigure and reboot just to find out what is going
+                  on.</span>
+          </a>
+        </li>
+        <li>
+          <a href="#config">
+            <b>Configuration</b>
+            <span>Sensible defaults and total configurability across the
+                  board.</span>
+          </a>
+        </li>
+        <li>
+          <a href="#versions">
+            <b>Versions</b>
+            <span>Supports versions with any number of parts or segments, not
+                  limited to the usual three.</span>
+          </a>
+        </li>
+        <li>
+          <a href="#updates">
+            <b>Updates</b>
+            <span>Respectful, careful, minimal image updates, or other
+                  strategies if you want them.</span>
+          </a>
+        </li>
+        <li>
+          <a href="#security">
+            <b>Security</b>
+            <span>Least privilege support designed in, with a practical
+                  default setup for getting started.</span>
+          </a>
+        </li>
+        <li>
+          <a href="#dropin">
+            <b>Drop-in</b>
+            <span>Optionally reads your existing <code>keel.sh</code>
+                  annotations, so most workloads move across untouched.</span>
+          </a>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="how" class="bay">
+    <div class="bay-body">
+      <p class="eyebrow"><span>02</span> How it works</p>
+      <h2>Watch. Poll. Compare. Update.</h2>
+
+      <ol class="steps">
+        <li>
+          <h3>Watch</h3>
+          <p>Subscribes to events for every workload Keelson controls, across
+             the whole cluster or only the namespaces you list.</p>
+        </li>
+        <li>
+          <h3>Poll</h3>
+          <p>Queries the image repository for tags on a schedule you set, with
+             the registry credentials the workload uses.</p>
+        </li>
+        <li>
+          <h3>Compare</h3>
+          <p>Ranks tags and decides whether a newer one qualifies under the
+             policy in the annotation.</p>
+        </li>
+        <li>
+          <h3>Update</h3>
+          <p>Writes the new tag. Your workload deploys the way it always does,
+             rolling or otherwise, with configuration untouched.</p>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <section id="strengths" class="bay">
+    <div class="bay-body">
+      <p class="eyebrow"><span>03</span> Strengths</p>
+      <h2>Keelson's Strengths</h2>
+
+      <div class="sub" id="logging">
+        <p class="sub-label">Logging</p>
+        <h3 class="sub-head">Key info on console. Full debug inside.</h3>
+        <p class="lead">
+          Keelson only logs useful information to the console. When it launches
+          it tells you the version of Keelson, the version of the image, and all
+          the configuration values. Then the processes it starts. Then the
+          number of watched workloads and which ones are under Keelson's
+          control. If you need more, full debug logs wait inside the pod for
+          inspection.
+        </p>
+
+        <figure class="logshot">
+          <img src="img/log-startup-boot.png" loading="lazy"
+               alt="Keelson boot banner, then the first of its configuration values">
+          <figcaption>Startup, the opening lines</figcaption>
+        </figure>
+
+        <figure class="logshot">
+          <img src="img/log-startup-managed.png" loading="lazy"
+               alt="Validation passing, watchers starting, and the list of managed workloads">
+          <figcaption>Startup, validation through the managed set</figcaption>
+        </figure>
+
+        <figure class="logshot">
+          <img src="img/log-updates.png" loading="lazy"
+               alt="A sequence of workload image updates and re-polls">
+          <figcaption>A morning of updates</figcaption>
+        </figure>
+
+        <figure class="logshot">
+          <img src="img/log-log-dir.png" loading="lazy"
+               alt="Directory listing of the current log file and its five rotated backups">
+          <figcaption>The full trail, inside the pod</figcaption>
+        </figure>
+      </div>
+
+      <div class="sub" id="config">
+        <p class="sub-label">Configuration</p>
+        <h3 class="sub-head">Auto by convention. Override as needed.</h3>
+        <p class="lead">
+          Registries configuration exists to allow Keelson to query registries
+          for workloads that pull images without imagePullSecrets, such as with
+          various cloud permissions models. Its secondary purpose is to allow
+          more efficient registry connections for multiple workloads with the
+          same registry and credentials pair, by caching the credentials and
+          using them through a whole cycle for all images with the same
+          registry.
+        </p>
+
+        <p>
+          Each entry is keyed by a registry host and each has an auth mode. For
+          secret auth mode the associated secret name and <code>.auth</code> key
+          is the same as the registries key where possible, and mapped to a
+          similar value where not. Overrides are available for both the secret
+          name and the <code>.auth</code> key, usable alone or both together for
+          explicit configuration.
+        </p>
+
+        <div class="terminal">
+          <div class="terminal-bar"><span></span><span></span><span></span>
+            <b>registries.yaml</b>
+          </div>
+<pre><code><span class="c"># mounted from the keelson ConfigMap at /configmap/registries.yaml</span>
+registries:
+  <span class="c"># Cloud identity, nothing to store and nothing to rotate</span>
+  123.dkr.ecr.us-east-1.amazonaws.com:
+    auth-mode: <span class="s">aws</span>
+  europe-docker.pkg.dev:
+    auth-mode: <span class="s">gcp</span>
+  myregistry.azurecr.io:
+    auth-mode: <span class="s">azure</span>
+  <span class="c"># Auto secret name and key, by convention</span>
+  ghcr.io:
+    <span class="c"># Reads from the same namespace Keelson is in</span>
+    auth-mode: <span class="s">secret</span> <span class="c"># secret `ghcr.io` .auth key `ghcr.io`</span>
+  reg.example:5000:
+    auth-mode: <span class="s">secret</span> <span class="c"># secret `reg.example-5000` .auth key `reg.example:5000`</span>
+    namespace: run-stage
+  <span class="c"># Mixed configuration</span>
+  reg.example:5001:
+    auth-mode: <span class="s">secret</span> <span class="c"># .auth key `reg.example:5001`</span>
+    secret-name-override: <span class="v">shared-pull-creds</span>
+  reg.example:5002:
+    auth-mode: <span class="s">secret</span> <span class="c"># secret `reg.example-5002`</span>
+    secret-key-override: <span class="v">https://reg.example:5002/v1/</span>
+  <span class="c"># Explicit</span>
+  reg.example:5003:
+    auth-mode: <span class="s">secret</span>
+    namespace: run-test
+    secret-name-override: <span class="v">reg-example-5003-creds</span>
+    secret-key-override: <span class="v">https://reg.example:5003/v1/</span></code></pre>
+        </div>
+
+        <p>
+          A registry with no entry relies on the workload resource, and if there
+          is no <code>imagePullSecrets</code> present it's treated as anonymous.
+          By default if the central credential fails to connect and the workload
+          has its own credential then that is tried as a fallback. If the
+          workload credential fails and the
+          <code>KEELSON_RESPECT_SA_PULL_SECRETS</code> service account check is
+          enabled and the service account has a credential then that's tried
+          too.
+        </p>
+
+        <p>
+          A workload can opt out of central credential use by setting
+          <code>keelson.pro/credentials</code> to <code>respect-pod-spec</code>
+          if it's known to require a different one to the central configuration.
+          Available values for <code>keelson.pro/credentials</code> are:
+        </p>
+
+        <div class="spec">
+          <div><code>central-then-pod-spec</code><span>central first, then the
+              workload's own <code>imagePullSecrets</code></span></div>
+          <div><code>central</code><span>central only, no fallback. Synonym
+              <code>ignore-pod</code></span></div>
+          <div><code>respect-pod-spec</code><span>the workload's own only,
+              central never consulted</span></div>
+        </div>
+
+      </div>
+
+      <div class="sub" id="versions">
+        <p class="sub-label">Versions</p>
+        <h3 class="sub-head">Beyond semver, flexible versions.</h3>
+        <p class="lead">
+          Many tools only support 3-part semver style versions, to the
+          exclusion of any other format. Keelson doesn't try to force you to use
+          semver - you can use whatever length you want. Some projects don't need
+          3 parts; 2 or even 1 might be enough, others need more. For example,
+          it's perfectly reasonable to combine a 3 part base image version with
+          a 3 part package, app or script-set version, and add a patch of your
+          own on the end, resulting in 7 parts.
+        </p>
+
+        <div class="spec">
+          <div><code>major</code><span>the first part, always</span></div>
+          <div><code>minor</code><span>the second part, always</span></div>
+          <div><code>patch</code><span>the last part, whatever the length</span></div>
+          <div><code>part-&lt;n&gt;</code><span>any part by number, 1-indexed, unbounded</span></div>
+        </div>
+
+        <p>
+          Everything to the left of the chosen part must match exactly. On a
+          five part tag like <code>1.15.1.36.1</code>, <code>major</code>,
+          <code>minor</code> and <code>patch</code> give you the first, second
+          and fifth, which leaves the third and fourth with no other name: that
+          is what <code>part-3</code> and <code>part-4</code> are for. A tag
+          with too few parts for the policy is skipped and logged.
+        </p>
+      </div>
+
+      <div class="sub" id="updates">
+        <p class="sub-label">Updates</p>
+        <h3 class="sub-head">Careful, respectful, minimal updates.</h3>
+        <p class="lead">
+          Great deployment systems run a validation pass against the API before
+          applying their manifests. If some other system has written a different
+          value to a field with a different ownership on the field, it causes
+          that validation to fail. By default Keelson matches the existing
+          ownership when it modifies the image field leaving it exactly how it
+          was found. However it's also reasonable to want Keelson to say it
+          changed the field itself, so that's an option too. Regardless, every
+          write is scoped to the image field alone, so nothing else on the
+          workload is at risk regardless of what else manages it.
+        </p>
+
+        <div class="spec">
+          <div><code>mimic</code><span>applies as the field's existing owner, the default</span></div>
+          <div><code>patch</code><span>a strategic-merge patch, attributed to Keelson</span></div>
+          <div><code>claim</code><span>applies as Keelson, taking ownership of the field</span></div>
+        </div>
+      </div>
+
+      <div class="sub" id="security">
+        <p class="sub-label">Security</p>
+        <h3 class="sub-head">Works out of the box, but easy to cut down.</h3>
+        <p class="lead">
+          The included RBAC covers the whole feature set so it works with any
+          configuration. Many installations need a lot less, so the manifests
+          are structured so it's easy to remove what you don't need. Reducing it
+          is documented and mostly automatic when using Helm and explicit when
+          using Kaptain.
+        </p>
+
+        <ul class="cuts">
+          <li><b>Cluster scope</b> drop the global Namespace permission and the
+              redundant own-namespace role pair</li>
+          <li><b>Namespace scope</b> drop the all-namespaces ClusterRole and
+              binding, and supply the roles per namespace</li>
+          <li><b>No pull secrets</b> using one cloud workload identity mode
+              alone, drop the Secret permissions entirely</li>
+          <li><b>No service account secrets</b> with
+              <code>KEELSON_RESPECT_SA_PULL_SECRETS</code> false, drop the
+              ServiceAccount permission</li>
+          <li><b>Fewer kinds</b> reduce the remaining roles to just the kinds
+              you actually watch</li>
+          <li><b>No suspended CronJobs</b> drop the Job creation permission</li>
+        </ul>
+      </div>
+
+      <div class="sub" id="dropin">
+<p class="sub-label">Drop-in</p>
+        <h3 class="sub-head">An *almost* drop-in replacement for Keel.</h3>
+        <p class="lead">
+          Set <code>KEELSON_CONFIG_MODE=keel</code> and Keelson reads your
+          existing <code>keel.sh/</code> annotations, so most workloads move
+          across untouched.
+        </p>
+
+        <div class="split">
+          <div>
+            <h4 class="split-head">Carries over</h4>
+            <ul class="ticks">
+              <li><code>keel.sh/</code> annotations, camelCase or hyphenated</li>
+              <li>Deployment, StatefulSet, DaemonSet, CronJob</li>
+              <li><code>pollSchedule</code> as <code>@hourly</code>,
+                  <code>@daily</code>, <code>@weekly</code>,
+                  <code>@monthly</code>, <code>@yearly</code>, or
+                  <code>@every</code> with a duration: <code>30s</code>,
+                  <code>5m</code>, <code>1h30m</code>, <code>1.5h</code></li>
+              <li><code>policy</code>, <code>matchTag</code> and <code>matchMode</code></li>
+              <li><code>initContainers</code>, <code>monitorContainers</code>
+                  and <code>imageVolumes</code>, with Keel's defaults</li>
+            </ul>
+          </div>
+          <div>
+            <h4 class="split-head">Not supported</h4>
+            <ul class="crosses">
+              <li><code>policy: force</code>, rejected outright</li>
+              <li>Digest tracking behind a mutable tag, such as
+                  <code>:latest</code></li>
+              <li><code>approvals</code>, <code>approvalDeadline</code>, and
+                  <code>releaseNotes</code></li>
+              <li>Raw cron expressions in <code>pollSchedule</code></li>
+              <li>Workload configuration in labels. Keelson only reads
+                  annotations</li>
+            </ul>
+          </div>
+        </div>
+
+        <p>
+          In addition to the 4 Kinds that Keel supports, Keelson also supports
+          Argo Rollouts and Jobs. Jobs are handled by annotating a suspended
+          CronJob, which Keelson triggers on update.
+        </p>
+
+        <p class="migrate-head">Migration Path</p>
+        <p class="migrate-intro">
+          There are two options for migrating from Keel to Keelson:
+        </p>
+        <ol class="migrate">
+          <li>Take down Keel and stand up Keelson in <code>keel</code> or
+              <code>both</code> mode. Verify that you're not using any
+              unsupported features before doing this.</li>
+          <li>Stand up Keelson side by side next to Keel in <code>keelson</code>
+              mode and migrate workloads over one at a time.</li>
+        </ol>
+        <p class="aside">
+          Note that a workload can only have one annotation prefix or the other,
+          never both.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section id="install" class="bay">
+    <div class="bay-body">
+      <p class="eyebrow"><span>04</span> Install</p>
+      <h2>Install it your way.</h2>
+      <p class="lead">
+        There are many ways to deploy a workload to Kubernetes. Keelson
+        directly supports the most popular method (Helm) and the best method
+        (Kaptain), and is adaptable to any other way with a little work.
+      </p>
+
+      <ul class="docs-list">
+        <li>
+          <a href="https://github.com/keelson-pro/keelson#kaptain">
+            Kaptain <span>keelson &rsaquo; Kaptain</span></a>
+          <p>A one-line entry in your product or meta environment, plus any config
+             overrides.</p>
+          <div class="snip">
+<pre><code>spec:
+  contents:
+    - ghcr.io/keelson-pro/keelson/keelson-package:<span class="v">1.42.1.42.1</span></code></pre>
+          </div>
+        </li>
+        <li>
+          <a href="https://github.com/keelson-pro/keelson#helm">
+            Helm <span>keelson &rsaquo; Helm</span></a>
+          <p>The chart, as an OCI artefact or from the classic repo, with values
+             for scope, registries and RBAC.</p>
+          <div class="snip">
+<pre><code><span class="p">$</span> helm install keelson <span class="s">oci://ghcr.io/keelson-pro/helm-charts/keelson</span> \
+    --namespace cluster-infra --create-namespace \
+    --set image.tag=<span class="v">1.42.1.42.1</span></code></pre>
+          </div>
+        </li>
+        <li>
+          <a href="https://github.com/keelson-pro/keelson#raw-apply">
+            Custom <span>keelson &rsaquo; Raw Apply</span></a>
+          <p>The plain manifests, for anyone who would rather read and apply
+             them than template them.</p>
+          <div class="snip">
+<pre><code><span class="p">$</span> helm repo add keelson <span class="s">https://keelson-pro.github.io/keelson-helm-chart</span>
+<span class="p">$</span> helm repo update
+<span class="p">$</span> helm template keelson keelson/keelson --namespace cluster-infra --set image.tag=<span class="v">1.20.1.36.1</span> --output-dir rendered
+<span class="p">$</span> kubectl apply --server-side --field-manager=<span class="v">"yourFieldManager"</span> -R -f rendered</code></pre>
+          </div>
+        </li>
+        <li>
+          <a href="https://github.com/keelson-pro/keelson#kubernetes-version-support">
+            Version coverage <span>keelson &rsaquo; Kubernetes Version Support</span></a>
+          <p>Keelson itself will work with any version of Kubernetes 1.22 and
+             up, however the tooling in the images has a narrower range. Each
+             keelson-package image supports the Kubernetes version in its 3rd
+             and 4th parts, plus one version either side of it.</p>
+          <p>The only other constraint is that earlier manifests with a later
+             image can fail at startup on validation. So keep the manifest set
+             and the 1st and 2nd parts of the image version in sync. This is
+             automatic with both Kaptain and Helm.</p>
+        </li>
+      </ul>
+
+      <figure class="plate figure">
+        <div class="plate-field plate-plain">
+          <img src="img/keelson-version-coverage.png"
+               alt="Grid of Keelson releases against the Kubernetes versions each supports"
+               loading="lazy">
+        </div>
+        <figcaption>
+          <span class="fig">Fig. 2</span>
+          <span class="cap">Which keelson-package image covers which Kubernetes version</span>
+        </figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section id="docs" class="bay">
+    <div class="bay-body">
+      <p class="eyebrow"><span>05</span> Docs</p>
+      <h2>Living documentation in the repositories</h2>
+      <p class="lead">
+        Each focused document lives with the system it describes so it's more
+        likely to be kept up-to-date.
+      </p>
+
+      <ul class="docs-list">
+        <li>
+          <a href="https://github.com/keelson-pro/keelson#keelson">
+            Start here <span>keelson</span></a>
+          <p>The heart of the Keelson project and index of all documentation.</p>
+        </li>
+        <li>
+          <a href="https://github.com/keelson-pro/keelson#using-keelson">
+            Getting it running <span>keelson &rsaquo; Using Keelson</span></a>
+          <p>Least privilege, Kaptain, Helm and raw apply, with examples.</p>
+        </li>
+        <li>
+          <a href="https://github.com/keelson-pro/keelson/blob/main/Configuration.md">
+            Full configuration reference
+            <span>Configuration.md &rsaquo; Everything you can set or tune</span></a>
+          <p>Annotations, global configuration and behavioural settings, plus the
+             description of the logging system.</p>
+        </li>
+        <li>
+          <a href="https://github.com/keelson-pro/keelson-helm-chart/tree/main/charts/keelson#install">
+            Helm chart docs <span>keelson-helm-chart &rsaquo; Install using Helm</span></a>
+          <p>OCI artefact, classic repo or a clone, plus values and registries.</p>
+        </li>
+        <li>
+          <a href="https://github.com/keelson-pro/keelson/blob/main/FieldManagerOwnership.md#keelsons-approach">
+            Field ownership <span>FieldManagerOwnership.md &rsaquo; Keelson's approach</span></a>
+          <p>A discussion of how Kubernetes field manager ownership works, and the
+             different approaches to it.</p>
+        </li>
+        <li>
+          <a href="https://github.com/keelson-pro/keelson/blob/main/EntryPoints.md">
+            Entry points <span>EntryPoints.md</span></a>
+          <p>Each script called from the outside, and what they all do.</p>
+        </li>
+        <li>
+          <a href="https://github.com/keelson-pro/keelson-all#branchout-repo-management">
+            The wider ecosystem <span>keelson-all &rsaquo; Branchout repo management</span></a>
+          <p>How the repositories fit together, and how to work across them.</p>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="github" class="bay">
+    <div class="bay-body">
+      <p class="eyebrow"><span>06</span> GitHub</p>
+      <h2>GitHub Org And Repos</h2>
+      <p class="lead">
+        Single responsibility repos, organised with Branchout. The Keelson
+        controller repo is the heart and soul of the system. The rest exist so it
+        can be built, packaged and installed cleanly, in several ways, with
+        support for different Kubernetes versions and total consistency
+        otherwise.
+      </p>
+
+      <ul class="docs-list">
+        <li>
+          <a href="https://github.com/keelson-pro/keelson">
+            keelson <span>the controller</span></a>
+          <p>Bash scripts and manifests, bundled as a set of versioned immutable
+             release artefacts for keelson-package and the Helm chart.</p>
+        </li>
+        <li>
+          <a href="https://github.com/keelson-pro/keelson-package">
+            keelson-package <span>runnable images</span></a>
+          <p>Keelson laid into the base images, bundled with the install
+             manifests, the contract, and default values for a cluster
+             install.</p>
+        </li>
+        <li>
+          <a href="https://github.com/keelson-pro/keelson-helm-chart">
+            keelson-helm-chart <span>the chart</span></a>
+          <p>Those manifests translated into Helm templates, published as an OCI
+             artefact, a classic repo on Pages, and a release asset.</p>
+        </li>
+        <li>
+          <a href="https://github.com/keelson-pro/keelson-base-image">
+            keelson-base-image <span>the foundation</span></a>
+          <p>Lean Debian Trixie slim with kubectl, yq 4 and skopeo, and nothing
+             else. Minimal, easy to update dependencies for easy CVE
+             mitigation.</p>
+        </li>
+        <li>
+          <a href="https://github.com/keelson-pro/keelson-foreign-ns-rbac">
+            keelson-foreign-ns-rbac <span>add-on</span></a>
+          <p>Role and RoleBinding granting the Keelson ServiceAccount access in
+             a namespace Keelson is not deployed in.</p>
+        </li>
+        <li>
+          <a href="https://github.com/keelson-pro/keelson-argo-rollouts-rbac">
+            keelson-argo-rollouts-rbac <span>add-on</span></a>
+          <p>Optional access to <code>rollouts.argoproj.io</code>, cluster wide
+             or for only the namespaces you need.</p>
+        </li>
+        <li>
+          <a href="https://github.com/keelson-pro/keelson-test-image">
+            keelson-test-image <span>the test rig</span></a>
+          <p>An image with an identical subset of the tooling in the base images,
+             but with all network tooling mocked at the BATS layer.</p>
+        </li>
+        <li>
+          <a href="https://github.com/keelson-pro/keelson-all">
+            keelson-all <span>the workspace</span></a>
+          <p>The Branchout root repo that clones and manages the rest, and where
+             the cross-cutting docs live.</p>
+        </li>
+        <li>
+          <a href="https://github.com/keelson-pro/keelson-pro">
+            keelson-pro <span>this site</span></a>
+          <p>The source for this website. All rights reserved, but public so you
+             can see exactly what it does.</p>
+        </li>
+      </ul>
+
+      <figure class="plate figure">
+        <div class="plate-field plate-plain">
+          <img src="img/keelson-ecosystem.png"
+               alt="Diagram of the Keelson repositories and how they feed into each other"
+               loading="lazy">
+        </div>
+        <figcaption>
+          <span class="fig">Fig. 3</span>
+          <span class="cap">How the repositories feed each other.</span>
+        </figcaption>
+      </figure>
+    </div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <div class="footer-in">
+    <p>Copyright (c) 2025-2026 Keelson contributors. All rights reserved.</p>
+    <p class="stamp">Site <span>1.1</span></p>
+  </div>
+</footer>
+
+<script type="module" src="js/site.js"></script>
+</body>
+</html>

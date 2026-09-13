@@ -1,0 +1,1163 @@
+/*
+ * All rights reserved. See LICENSE.md.
+ * Copyright (c) 2025-2026 Keelson contributors (Fred Cooke)
+ *
+ * Aesthetic: admiralty chart and naval architecture drawing. A keelson is the
+ * beam running the length of a hull above the keel, so the page has one too:
+ * a hairline down the left with a station node per section.
+ *
+ * Palette is the logo's own #002052 and #01a8fd, nothing invented.
+ */
+
+/* --------------------------------------------------------------------------
+ * Fonts. Self hosted, latin subset, so the site makes no external requests
+ * and works offline. IBM Plex, SIL OFL 1.1, see fonts/OFL.txt.
+ * ----------------------------------------------------------------------- */
+
+@font-face {
+  font-family: 'Plex Cond';
+  src: url('../fonts/plex-condensed-700.woff2') format('woff2');
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Plex';
+  src: url('../fonts/plex-sans-400.woff2') format('woff2');
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Plex';
+  src: url('../fonts/plex-sans-600.woff2') format('woff2');
+  font-weight: 600; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Plex';
+  src: url('../fonts/plex-sans-700.woff2') format('woff2');
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'Plex Mono';
+  src: url('../fonts/plex-mono-400.woff2') format('woff2');
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+
+/* --------------------------------------------------------------------------
+ * Tokens
+ * ----------------------------------------------------------------------- */
+
+:root {
+  color-scheme: dark light;
+
+  /* Straight off keelson-mark.svg, so the page and the logo cannot drift. */
+  --hull: #002052;
+  --water: #01a8fd;
+
+  --abyss: #00101f;
+  --deep: #041c33;
+  --ink: #dbe7f2;
+  /* Body-secondary. Distinct from --ink-dim, which is for small labels only:
+   * --ink-dim at paragraph size was too low contrast to read comfortably. */
+  --ink-soft: #b3c6d8;
+  --ink-dim: #9ab2c6;
+  --rule: #0e3054;
+  --accent: var(--water);
+  --label-ink: var(--water);
+  --plate: #eef2f5;
+  --plate-ink: #445a70;
+
+  /* The chart-paper square. Section padding is one of these, so the gap from
+   * a rule to the content it separates always reads as exactly one cell. */
+  --grid: 2.5rem;
+
+  --masthead-h: 3.9rem;
+  --rail: 3.5rem;
+  --measure: 40rem;
+  --gutter: 1.5rem;
+
+  --display: 'Plex Cond', 'Helvetica Neue Condensed', sans-serif;
+  --body: 'Plex', 'Helvetica Neue', sans-serif;
+  --mono: 'Plex Mono', ui-monospace, Menlo, monospace;
+
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --abyss: #eef1f4;
+    --deep: #ffffff;
+    --ink: #071f38;
+    --ink-soft: #33485e;
+    --ink-dim: #3a4f63;
+    --rule: #ccd7e1;
+    --accent: var(--hull);
+    --label-ink: var(--hull);
+    --plate: #ffffff;
+    --plate-ink: #445a70;
+  }
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: calc(var(--masthead-h) + 1rem);
+}
+
+body {
+  margin: 0;
+  background: var(--abyss);
+  color: var(--ink);
+  font: 400 1rem/1.6 var(--body);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+
+  /*
+   * Chart paper: a fine grid, plus one soft pool of light behind the hero so
+   * the page has depth instead of a flat fill.
+   */
+  background-image:
+    radial-gradient(70rem 45rem at 78% -8%,
+      color-mix(in srgb, var(--water) 13%, transparent), transparent 65%),
+    linear-gradient(color-mix(in srgb, var(--rule) 42%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--rule) 42%, transparent) 1px, transparent 1px);
+  background-size: 100% 100%, var(--grid) var(--grid), var(--grid) var(--grid);
+  background-attachment: fixed, scroll, scroll;
+}
+
+::selection { background: var(--water); color: #00101f; }
+
+/* --------------------------------------------------------------------------
+ * Type
+ * ----------------------------------------------------------------------- */
+
+h1, h2, h3 {
+  font-family: var(--display);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  line-height: 1.02;
+  margin: 0;
+  text-wrap: balance;
+}
+
+/* The wordmark. Set in the full width Plex Sans rather than the condensed cut
+ * used elsewhere, and in sentence case: this is a name, not a headline. */
+h1 {
+  font-family: var(--body);
+  font-weight: 700;
+  font-size: clamp(3.5rem, 12vw, 9rem);
+  letter-spacing: -0.04em;
+  line-height: 0.9;
+  margin-bottom: 0;
+}
+
+h2 {
+  font-size: clamp(1.75rem, 3.4vw, 2.6rem);
+  text-transform: uppercase;
+  margin-bottom: 1.5rem;
+  /* Wide enough that a headline breaks over two or three lines, not five.
+   * Condensed caps stack fast, so a tight measure turns into a column. */
+  max-width: 26ch;
+}
+
+h3 {
+  font-size: 1.0625rem;
+  font-family: var(--body);
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.3;
+  text-transform: none;
+}
+
+p { margin: 0 0 1rem; }
+
+/*
+ * Body prose gets the same measure as .lead, so the right edge does not jump
+ * between a section's opening paragraph and the ones after it. It also pulls
+ * the line back from the ~124 characters the 62rem column allowed, which was
+ * well past comfortable regardless of the alignment.
+ *
+ * Scoped to direct children so the components that set their own width, the
+ * split columns, docs list, steps and cards, keep theirs.
+ */
+.bay-body > p,
+.sub > p { max-width: var(--measure); }
+a { color: var(--accent); }
+
+.lead {
+  font-size: clamp(1.05rem, 1.6vw, 1.25rem);
+  line-height: 1.55;
+  color: var(--ink);
+  max-width: var(--measure);
+}
+
+/* Chart annotation: small, tracked out, mono numeral in a box.
+ *
+ * flex-wrap and the min-width are both load bearing. Without them this row
+ * cannot break, and a tracked out uppercase string sets a min-content width
+ * wider than a phone, which drags the whole page into horizontal overflow. */
+.eyebrow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.7rem;
+  min-width: 0;
+  margin: 0 0 1.5rem;
+  font-family: var(--mono);
+  /* Weight, size and colour match .sub-label: a section label and a subsection
+   * label are the same kind of thing, so they should not read as two different
+   * levels of emphasis. --ink-dim at 400 left this one visibly lighter. */
+  font-weight: 700;
+  font-size: 0.8125rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--label-ink);
+}
+
+@media (min-width: 40rem) {
+  .eyebrow { letter-spacing: 0.18em; }
+}
+
+.eyebrow span {
+  padding: 0.2rem 0.45rem;
+  color: var(--label-ink);
+  border: 1px solid color-mix(in srgb, var(--water) 40%, transparent);
+  letter-spacing: 0.1em;
+}
+
+.eyebrow::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--rule), transparent);
+}
+
+/* A secondary remark under a block: the detail, not the claim. */
+.aside {
+  margin-top: 1.5rem;
+  padding-left: 1rem;
+  border-left: 2px solid color-mix(in srgb, var(--water) 35%, transparent);
+  color: var(--ink-soft);
+  font-size: 0.9375rem;
+  max-width: var(--measure);
+}
+
+/* Inline code in prose. */
+:not(pre) > code {
+  font-size: 0.875em;
+  padding: 0.1em 0.32em;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--ink-dim) 16%, transparent);
+  color: var(--ink);
+}
+
+.skip-link { position: absolute; left: -9999px; }
+.skip-link:focus {
+  left: 1rem; top: 1rem; z-index: 20;
+  padding: 0.5rem 0.9rem;
+  background: var(--water); color: #00101f;
+}
+
+:focus-visible { outline: 2px solid var(--water); outline-offset: 3px; }
+
+/* --------------------------------------------------------------------------
+ * Masthead
+ * ----------------------------------------------------------------------- */
+
+.masthead {
+  position: sticky; top: 0; z-index: 10;
+  background: color-mix(in srgb, var(--abyss) 82%, transparent);
+  backdrop-filter: blur(14px) saturate(1.4);
+  border-bottom: 1px solid var(--rule);
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  height: var(--masthead-h);
+  padding: 0 var(--gutter);
+  max-width: 82rem;
+  margin: 0 auto;
+}
+
+/* The lockup carries the name itself, so there is no text beside it. */
+.brand { display: flex; align-items: center; text-decoration: none; }
+
+/* Sized off the height: the lockup is 680x320 with the name under the vessel,
+ * so it needs vertical room to stay legible at masthead scale. */
+.brand img {
+  height: 2.5rem;
+  width: auto;
+  display: block;
+}
+
+/* Navy on the dark ground needs lifting to read. */
+@media (prefers-color-scheme: dark) {
+  .brand img { filter: brightness(2.8) saturate(0.8); }
+}
+
+/* Outbound: the arrow says it leaves the site, so no number in the list. */
+.nav-out i { font-style: normal; }
+
+.burger {
+  display: grid; gap: 4px;
+  padding: 0.5rem; margin-right: -0.5rem;
+  background: none; border: 0; cursor: pointer;
+}
+.burger span {
+  display: block; width: 20px; height: 1.5px;
+  background: var(--ink);
+  transition: transform 0.25s var(--ease), opacity 0.15s linear;
+}
+.burger[aria-expanded="true"] span:nth-child(1) { transform: translateY(5.5px) rotate(45deg); }
+.burger[aria-expanded="true"] span:nth-child(2) { opacity: 0; }
+.burger[aria-expanded="true"] span:nth-child(3) { transform: translateY(-5.5px) rotate(-45deg); }
+
+.nav-menu {
+  display: none;
+  flex-basis: 100%;
+  list-style: none;
+  margin: 0;
+  padding: 0.5rem 0 1rem;
+}
+.nav-menu.open { display: block; }
+
+.nav-menu a {
+  display: flex;
+  align-items: baseline;
+  gap: 0.7rem;
+  padding: 0.7rem 0;
+  color: var(--ink-dim);
+  text-decoration: none;
+  font-family: var(--display);
+  font-size: 0.9375rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--rule);
+  transition: color 0.2s var(--ease);
+}
+
+.nav-menu i {
+  font-family: var(--mono);
+  font-style: normal;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  color: color-mix(in srgb, var(--ink-dim) 70%, transparent);
+}
+
+.nav-menu a:hover { color: var(--ink); }
+.nav-menu a[aria-current="true"] { color: var(--label-ink); }
+.nav-menu a[aria-current="true"] i { color: var(--label-ink); }
+
+/*
+ * The bar goes horizontal as soon as ten items can physically fit beside the
+ * lockup, not when they fit comfortably. The gap and the type scale with the
+ * viewport, so the row tightens up as it narrows and only hands over to the
+ * burger when it would genuinely collide with the mark.
+ */
+@media (min-width: 56rem) {
+  .burger { display: none; }
+  .nav-menu {
+    display: flex;
+    flex-basis: auto;
+    gap: clamp(0.7rem, 1.5vw, 1.75rem);
+    padding: 0;
+  }
+  .nav-menu a {
+    display: block;
+    padding: 0;
+    border: 0;
+    font-size: clamp(0.75rem, 0.9vw, 0.8125rem);
+    white-space: nowrap;
+    position: relative;
+  }
+  .nav-menu i { display: none; }
+  /* The outbound arrow stays: it is the only cue that this one leaves. */
+  .nav-menu .nav-out i { display: inline; margin-right: 0.3rem; font-size: 0.75rem; }
+  /* Station tick under the active item, echoing the keel nodes. */
+  .nav-menu a::after {
+    content: '';
+    position: absolute;
+    left: 50%; bottom: -0.55rem;
+    width: 0; height: 2px;
+    background: var(--water);
+    transform: translateX(-50%);
+    transition: width 0.3s var(--ease);
+  }
+  .nav-menu a[aria-current="true"]::after { width: 100%; }
+}
+
+/* --------------------------------------------------------------------------
+ * The keel
+ * ----------------------------------------------------------------------- */
+
+.keel { display: none; }
+
+@media (min-width: 68rem) {
+  .keel {
+    display: block;
+    position: fixed;
+    /* max(), because between 68rem and 82rem the centring term goes negative
+     * and took the whole rail off the left edge of the screen. */
+    left: max(1.25rem, calc((100vw - 82rem) / 2 + 1.25rem));
+    top: calc(var(--masthead-h) + 4rem);
+    bottom: 4rem;
+    width: 1px;
+    background: var(--rule);
+    z-index: 5;
+  }
+
+  /* Fills from the top as the page scrolls; height set by site.js. */
+  .keel-run {
+    position: absolute;
+    inset: 0 0 auto 0;
+    width: 1px;
+    height: 0;
+    background: linear-gradient(var(--water), color-mix(in srgb, var(--water) 20%, transparent));
+    transition: height 0.15s linear;
+  }
+
+  /*
+   * Every station is the same size and evenly spaced, set by site.js. The fill
+   * runs on the same even scale, so the head of the fill always meets a dot as
+   * that waypoint arrives.
+   */
+  .keel b {
+    position: absolute;
+    left: 50%;
+    width: 7px; height: 7px;
+    margin: -3.5px 0 0 -3.5px;
+    border: 1px solid var(--rule);
+    background: var(--abyss);
+    transform: rotate(45deg);
+    transition: background 0.3s var(--ease), border-color 0.3s var(--ease),
+                box-shadow 0.3s var(--ease);
+  }
+
+  .keel b.lit {
+    background: var(--water);
+    border-color: var(--water);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--water) 18%, transparent);
+  }
+
+}
+
+/* --------------------------------------------------------------------------
+ * Bays (sections)
+ * ----------------------------------------------------------------------- */
+
+.bay {
+  max-width: 82rem;
+  margin: 0 auto;
+  padding: var(--grid) var(--gutter);
+  border-top: 1px solid var(--rule);
+}
+
+.bay:first-child { border-top: 0; }
+
+/* min-width: 0 defeats the grid and flex default of min-content sizing, which
+ * is what lets long mono strings and wide <pre> blocks stretch a track instead
+ * of scrolling inside it. */
+.bay-body { max-width: 62rem; min-width: 0; }
+.bay-hero > * { min-width: 0; }
+
+@media (min-width: 68rem) {
+  .bay { padding-left: var(--rail); padding-right: var(--rail); }
+}
+
+/* Hero: the plate first and near full width, the wordmark beneath it. The rail
+ * inset the other bays use is dropped here so the plate runs closer to the
+ * edges, which is the point of it being the first thing you see. */
+.bay-hero {
+  padding-top: clamp(1.5rem, 3.5vh, 2.5rem);
+  padding-bottom: var(--grid);
+}
+
+@media (min-width: 68rem) {
+  .bay-hero { padding-left: var(--gutter); padding-right: var(--gutter); }
+  /* Push the wordmark back to the rail the other bays use, so it sits the same
+   * one grid off the keel instead of hard against it. */
+  .hero-title { margin-left: calc(var(--rail) - var(--gutter)); }
+}
+
+/* Wordmark, waterline, claim: stacked, in that reading order. fit-content so
+ * the block is exactly as wide as the wordmark, see .tagline below. */
+.hero-title {
+  width: fit-content;
+  margin-top: clamp(1.5rem, 3.5vw, 2.5rem);
+}
+
+.tagline {
+  /*
+   * width:0 keeps the claim out of the parent's intrinsic sizing, so
+   * .hero-title shrinks to the wordmark alone; min-width:100% then lays it back
+   * out at that width. The claim therefore measures exactly as wide as the word
+   * Keelson at any viewport, with no hardcoded ratio to drift out of step when
+   * the type scales.
+   */
+  width: 0;
+  min-width: 100%;
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 700;
+  /* Sized to run nearly the width of the wordmark above it, so the two read as
+   * one lockup rather than a big word with a caption trailing off short. */
+  font-size: clamp(1.3rem, 2.7vw, 2.1rem);
+  line-height: 1.15;
+  color: var(--ink-soft);
+  text-wrap: balance;
+}
+
+/* The waterline from the mark, redrawn between the name and the claim, running
+ * the full width of the wordmark: the parent is already exactly that wide. */
+.tagline::before {
+  content: '';
+  display: block;
+  width: 100%;
+  height: 3px;
+  margin: clamp(0.85rem, 1.8vw, 1.25rem) 0 clamp(0.9rem, 1.9vw, 1.35rem);
+  background: var(--water);
+}
+
+/* --------------------------------------------------------------------------
+ * Drawing plate
+ * ----------------------------------------------------------------------- */
+
+.plate {
+  margin: 0;
+  background: var(--plate);
+  border: 1px solid var(--rule);
+  box-shadow: 0 24px 60px -30px rgba(0, 8, 20, 0.75);
+  position: relative;
+}
+
+/* Corner ticks, as on a drawing sheet. */
+.plate::before, .plate::after {
+  content: '';
+  position: absolute;
+  width: 12px; height: 12px;
+  border: 1px solid color-mix(in srgb, var(--plate-ink) 45%, transparent);
+}
+.plate::before { top: 7px; left: 7px; border-right: 0; border-bottom: 0; }
+.plate::after { bottom: 7px; right: 7px; border-left: 0; border-top: 0; }
+
+.plate-field {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(1rem, 2.2vw, 1.75rem) clamp(1rem, 2.2vw, 1.75rem) clamp(1.25rem, 2.6vw, 2rem);
+  /* Faint squared paper inside the plate only. */
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--plate-ink) 13%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--plate-ink) 13%, transparent) 1px, transparent 1px);
+  background-size: 1.25rem 1.25rem;
+}
+
+/*
+ * keelson-mark.svg carries a lot of empty margin inside its own 680x206
+ * viewBox. Measured with getBBox over every drawn shape, the artwork occupies
+ * x 41.4..649.1, y 40.0..164.2. So the vessel is really 4.89:1, not the 3.30:1
+ * the file claims, and a third of the file's height is nothing at all. Left
+ * alone, that empty band is what made the plate taller than it needed to be.
+ *
+ * Scaled up and pulled out by exactly that margin, with the parent clipping the
+ * overhang, so the plate sizes to the vessel rather than to the file. Every
+ * percentage resolves against the container width, vertical margins included,
+ * which is what keeps the arithmetic consistent.
+ *
+ *   680 / 607.7 = 111.897%   scale so the artwork spans the field exactly
+ *   41.4 / 607.7 =  6.813%   left margin inside the file
+ *   30.9 / 607.7 =  5.085%   right
+ *   40.0 / 607.7 =  6.582%   top
+ *   41.8 / 607.7 =  6.879%   bottom
+ *
+ * Leaving the field 124.2/607.7 = 20.44% of its width in height.
+ */
+.plate-field img {
+  display: block;
+  width: 111.897%;
+  height: auto;
+  margin: -6.582% -5.085% -6.879% -6.813%;
+  position: relative;
+  z-index: 1;
+}
+
+/* The vessel's waterline, drawn across the full plate. */
+.waterline {
+  position: absolute;
+  left: 0; right: 0;
+  bottom: 1.25rem;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent, var(--water) 12%, var(--water) 88%, transparent);
+  opacity: 0.85;
+}
+
+/* A plate used as a figure further down the page, rather than as the hero.
+ *
+ * Must come after the .plate-field rules above: these override them at equal
+ * specificity, so source order is what decides. Placed earlier, the hero's
+ * negative-margin crop won and clipped these bitmaps on three sides.
+ */
+.figure { margin: 2.5rem 0 0; }
+
+/* Holds a bitmap that already carries its own whitespace. None of the hero's
+ * cropping applies, and the grid paper would only fight the diagram. */
+/* A thin, even gap on all four sides. The diagrams carry their own whitespace,
+ * so a full-width plate margin on top of that reads as a wasteful frame. */
+.plate-plain {
+  padding: 0.5rem;
+  background-image: none;
+  overflow: visible;
+}
+
+.plate-plain img {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0;
+}
+
+.plate figcaption {
+  display: grid;
+  gap: 0.4rem 1rem;
+  text-align: center;
+  padding: 0.85rem clamp(1.25rem, 3vw, 2.5rem);
+  border-top: 1px solid color-mix(in srgb, var(--plate-ink) 25%, transparent);
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.14em;
+  color: var(--plate-ink);
+}
+
+/* The plate number stays a label: uppercase, like the annotation it is. */
+.plate figcaption .fig { text-transform: uppercase; }
+
+/*
+ * Three columns with the third left empty, so the title centres against the
+ * whole plate rather than against the space left over beside Fig. 1.
+ */
+@media (min-width: 40rem) {
+  .plate figcaption {
+    grid-template-columns: 1fr auto 1fr;
+    text-align: initial;
+  }
+  .plate figcaption .fig { justify-self: start; }
+  .plate figcaption .cap { justify-self: center; }
+}
+
+/* --------------------------------------------------------------------------
+ * Mission: the strengths in brief, each a way into its section
+ * ----------------------------------------------------------------------- */
+
+.missions {
+  list-style: none;
+  margin: 2.5rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 1px;
+  background: var(--rule);
+  border: 1px solid var(--rule);
+}
+
+@media (min-width: 46rem) { .missions { grid-template-columns: 1fr 1fr; } }
+
+.missions a {
+  display: block;
+  height: 100%;
+  padding: 1.15rem 1.35rem;
+  background: var(--abyss);
+  text-decoration: none;
+  position: relative;
+  transition: background 0.3s var(--ease);
+}
+
+.missions a::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 0; height: 2px;
+  background: var(--water);
+  transition: width 0.35s var(--ease);
+}
+
+.missions a:hover,
+.missions a:focus-visible { background: var(--deep); }
+.missions a:hover::before,
+.missions a:focus-visible::before { width: 100%; }
+
+.missions b {
+  display: block;
+  margin-bottom: 0.3rem;
+  font-family: var(--display);
+  font-size: 1.0625rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--label-ink);
+}
+
+.missions span {
+  display: block;
+  color: var(--ink-soft);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+/* --------------------------------------------------------------------------
+ * Subsections inside a bay
+ * ----------------------------------------------------------------------- */
+
+.sub {
+  margin-top: var(--grid);
+  padding-top: var(--grid);
+  border-top: 1px solid var(--rule);
+  /* Its own anchor target, since the mission list links straight in. */
+  scroll-margin-top: calc(var(--masthead-h) + 1rem);
+}
+
+/*
+ * --label-ink, not --water: the cyan measures 2.31:1 on the light ground, well
+ * under the 4.5:1 minimum, and this is small tracked-out type where it matters
+ * most. The token is the cyan in dark mode, where it reads at 7.33:1, and the
+ * hull navy in light, where it reads at 13.94:1.
+ */
+.sub-label {
+  margin: 0 0 0.6rem;
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 0.8125rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--label-ink);
+}
+
+.sub-head {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: clamp(1.4rem, 2.6vw, 2rem);
+  line-height: 1.08;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+  margin: 0 0 1.25rem;
+  max-width: 26ch;
+}
+
+/* --------------------------------------------------------------------------
+ * Split: two columns of related detail
+ * ----------------------------------------------------------------------- */
+
+.split {
+  display: grid;
+  gap: clamp(1.75rem, 4vw, 3rem);
+  margin-top: 2.5rem;
+}
+
+@media (min-width: 46rem) {
+  .split { grid-template-columns: 1fr 1fr; }
+}
+
+.split > div { min-width: 0; }
+
+.split p { color: var(--ink-soft); margin: 0; }
+
+.split-head {
+  margin: 0 0 0.9rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--rule);
+  font-family: var(--mono);
+  font-weight: 400;
+  font-size: 0.75rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+/* --------------------------------------------------------------------------
+ * Marked lists
+ * ----------------------------------------------------------------------- */
+
+.ticks, .crosses {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  color: var(--ink-soft);
+}
+
+.ticks li, .crosses li {
+  position: relative;
+  padding: 0 0 0.7rem 1.6rem;
+  font-size: 0.9375rem;
+}
+
+.ticks li::before, .crosses li::before {
+  position: absolute;
+  left: 0;
+  font-family: var(--mono);
+  font-size: 0.8rem;
+}
+
+.ticks li::before { content: '\2713'; color: var(--label-ink); }
+.crosses li::before { content: '\00d7'; color: var(--ink-dim); }
+
+/* --------------------------------------------------------------------------
+ * Spec: term and gloss, like a key on a drawing
+ * ----------------------------------------------------------------------- */
+
+.spec {
+  margin: 2.25rem 0;
+  border-top: 1px solid var(--rule);
+}
+
+.spec > div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 1.25rem;
+  padding: 0.7rem 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.spec code {
+  min-width: 7rem;
+  color: var(--label-ink);
+  background: none;
+  padding: 0;
+  font-size: 0.875rem;
+}
+
+.spec span { color: var(--ink-soft); font-size: 0.9375rem; }
+
+/* --------------------------------------------------------------------------
+ * Cuts: the least-privilege reductions
+ * ----------------------------------------------------------------------- */
+
+.cuts {
+  list-style: none;
+  margin: 2.5rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 1px;
+  background: var(--rule);
+  border: 1px solid var(--rule);
+}
+
+@media (min-width: 46rem) { .cuts { grid-template-columns: 1fr 1fr; } }
+
+.cuts li {
+  background: var(--abyss);
+  padding: 1.1rem 1.25rem;
+  color: var(--ink-soft);
+  font-size: 0.9375rem;
+  transition: background 0.3s var(--ease);
+}
+
+.cuts li:hover { background: var(--deep); }
+
+.cuts b {
+  display: block;
+  margin-bottom: 0.3rem;
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* --------------------------------------------------------------------------
+ * Steps
+ * ----------------------------------------------------------------------- */
+
+.steps {
+  counter-reset: step;
+  list-style: none;
+  margin: 2.5rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0;
+}
+
+.steps li {
+  counter-increment: step;
+  position: relative;
+  padding: 1.4rem 0 1.4rem 3.75rem;
+  border-top: 1px solid var(--rule);
+}
+
+.steps li:last-child { border-bottom: 1px solid var(--rule); }
+
+.steps li::before {
+  content: counter(step, decimal-leading-zero);
+  position: absolute;
+  left: 0; top: 1.4rem;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  color: var(--label-ink);
+  border: 1px solid color-mix(in srgb, var(--water) 35%, transparent);
+  padding: 0.2rem 0.45rem;
+}
+
+.steps h3 { margin-bottom: 0.35rem; }
+.steps p { margin: 0; color: var(--ink-soft); max-width: var(--measure); }
+
+/* --------------------------------------------------------------------------
+ * Migration options: a plain numbered list, no station markers
+ * ----------------------------------------------------------------------- */
+
+/* Matches .split-head, rule included. */
+.migrate-head {
+  margin: 2rem 0 0.9rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--rule);
+  font-family: var(--mono);
+  font-weight: 400;
+  font-size: 0.75rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.migrate-intro {
+  margin: 0 0 0.9rem;
+  max-width: var(--measure);
+}
+
+.migrate {
+  margin: 0;
+  padding-left: 1.4rem;
+  max-width: var(--measure);
+  color: var(--ink-soft);
+}
+
+.migrate li { margin-bottom: 0.55rem; }
+.migrate li::marker { color: var(--label-ink); font-weight: 600; }
+
+/* --------------------------------------------------------------------------
+ * Log screenshots
+ *
+ * Rendered from the text in src/logs/ by src/bin/render-log-shots.bash. They
+ * are images rather than styled markup because a terminal is what an operator
+ * actually looks at, and green-on-black inside a light page reads as a
+ * different surface, which is the point.
+ * ----------------------------------------------------------------------- */
+
+.logshot {
+  margin: 2rem 0;
+}
+
+.logshot img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--rule);
+}
+
+.logshot figcaption {
+  margin-top: 0.6rem;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+/* --------------------------------------------------------------------------
+ * Docs list
+ * ----------------------------------------------------------------------- */
+
+.docs-list {
+  list-style: none;
+  margin: 2.5rem 0 0;
+  padding: 0;
+  border-top: 1px solid var(--rule);
+  max-width: 58rem;
+}
+
+.docs-list li { border-bottom: 1px solid var(--rule); }
+
+.docs-list a {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.85rem;
+  padding: 1.15rem 0 0.3rem;
+  font-family: var(--body);
+  font-weight: 600;
+  font-size: 1.0625rem;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+/* The path, so it is obvious which file you are about to open. */
+.docs-list a span {
+  font-family: var(--mono);
+  font-weight: 400;
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+  color: var(--ink-dim);
+}
+
+.docs-list a::after {
+  content: '\2197';
+  margin-left: auto;
+  color: var(--label-ink);
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: opacity 0.25s var(--ease), transform 0.25s var(--ease);
+}
+
+.docs-list a:hover,
+.docs-list a:focus-visible { color: var(--label-ink); }
+.docs-list a:hover::after,
+.docs-list a:focus-visible::after { opacity: 1; transform: none; }
+
+.docs-list p {
+  margin: 0;
+  padding-bottom: 1.15rem;
+  color: var(--ink-soft);
+  font-size: 0.9375rem;
+  max-width: var(--measure);
+}
+
+/* A bare code box inside a docs entry. No chrome bar: the entry above already
+ * says what it is, so a header would only repeat it. */
+.snip {
+  margin: 0 0 1.15rem;
+  border: 1px solid var(--rule);
+  background: var(--deep);
+}
+
+.snip pre {
+  margin: 0;
+  padding: 0.9rem 1rem;
+  overflow-x: auto;
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+  line-height: 1.7;
+  color: var(--ink);
+}
+
+.snip .p { color: var(--label-ink); user-select: none; }
+.snip .s { color: var(--label-ink); }
+.snip .v { color: var(--ink-soft); }
+
+/* --------------------------------------------------------------------------
+ * Terminal
+ * ----------------------------------------------------------------------- */
+
+.terminal {
+  /* The prose that follows a terminal block is a continuation of it, so the two
+   * sit tight together. The space is all above. */
+  margin: 2rem 0 0;
+  border: 1px solid var(--rule);
+  background: var(--deep);
+  overflow: hidden;
+  max-width: 54rem;
+}
+
+/* First paragraph after a terminal block sits directly under it. */
+.terminal + p { margin-top: 0.9rem; }
+
+.terminal-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 0.85rem;
+  border-bottom: 1px solid var(--rule);
+  background: color-mix(in srgb, var(--abyss) 55%, var(--deep));
+}
+
+.terminal-bar span {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--ink-dim) 45%, transparent);
+}
+
+.terminal-bar b {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-weight: 400;
+  font-size: 0.75rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.terminal pre {
+  margin: 0;
+  padding: 1.25rem 1.1rem;
+  overflow-x: auto;
+  font-family: var(--mono);
+  font-size: 0.8125rem;
+  line-height: 1.75;
+  color: var(--ink);
+}
+
+.terminal .c { color: var(--ink-dim); }
+.terminal .p { color: var(--label-ink); user-select: none; }
+.terminal .s { color: var(--label-ink); }
+.terminal .v { color: var(--ink-dim); }
+
+/* --------------------------------------------------------------------------
+ * Footer
+ * ----------------------------------------------------------------------- */
+
+/*
+ * --deep, not a mix down towards black. Mixing --abyss with #000 only works in
+ * the dark theme; in light --abyss is pale, so the bar came out mid grey with
+ * mid grey text on it and was unreadable.
+ */
+.footer {
+  border-top: 1px solid var(--rule);
+  background: var(--deep);
+}
+
+.footer-in {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem 1.5rem;
+  max-width: 82rem;
+  margin: 0 auto;
+  padding: 1.75rem var(--gutter);
+  font-size: 0.8125rem;
+  color: var(--ink-dim);
+}
+
+@media (min-width: 68rem) {
+  .footer-in { padding-left: var(--rail); padding-right: var(--rail); }
+}
+
+.footer p { margin: 0; }
+
+.stamp {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.stamp span { color: var(--label-ink); }
+
+/* --------------------------------------------------------------------------
+ * Motion
+ *
+ * One orchestrated load for the hero, then a single reveal per bay on scroll.
+ * .ready is set by site.js so nothing is stuck hidden if the script fails.
+ * ----------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: no-preference) {
+  .ready .bay-hero > * {
+    animation: rise 0.75s var(--ease) backwards;
+  }
+  /* Plate first, wordmark a beat later: the same order the eye reads them. */
+  .ready .bay-hero .plate { animation-delay: 0.05s; }
+  .ready .bay-hero .hero-title { animation-delay: 0.22s; }
+
+  .ready .bay:not(.bay-hero) .bay-body {
+    opacity: 0;
+    transform: translateY(14px);
+    transition: opacity 0.6s var(--ease), transform 0.6s var(--ease);
+  }
+  .ready .bay.seen .bay-body { opacity: 1; transform: none; }
+
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: none; }
+  }
+}

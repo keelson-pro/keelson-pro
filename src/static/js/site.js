@@ -15,7 +15,12 @@ const links = Array.from(menu?.querySelectorAll('a') ?? []);
 // Bays and the subsections inside them both get a station on the keel, in
 // document order. Subsections have no menu item of their own, so they inherit
 // their bay's: one item stays lit for a whole run of dots.
-const waypoints = Array.from(document.querySelectorAll('main .bay, main .sub'));
+// The hero is represented by its title rather than by its bay: a station at the
+// top of the bay sits level with the banner plate, lit before anything has been
+// read. The first dot now belongs to the wordmark.
+const waypoints = Array.from(
+  document.querySelectorAll('main .hero-title, main .bay:not(.bay-hero), main .sub'),
+);
 const stations = new Map(
   Array.from(document.querySelectorAll('.keel b'))
     .map((node) => [node.dataset.station, node]),
@@ -175,7 +180,8 @@ if (run) {
       i += 1;
     }
 
-    markCurrent(i);
+    // Above the first waypoint nothing is lit: the banner has no station.
+    markCurrent(y >= tops[0] ? i : -1);
 
     let frac = 0;
     if (i < last) {

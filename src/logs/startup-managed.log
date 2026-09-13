@@ -1,0 +1,8 @@
+2026-09-11T08:14:02Z INFO Validation passed: configuration and dependencies validated successfully.
+2026-09-11T08:14:03Z INFO Watcher for Deployment in 'run-platform-nonprod' started (pid 41).
+2026-09-11T08:14:03Z INFO Watcher for StatefulSet in 'run-platform-nonprod' started (pid 44).
+2026-09-11T08:14:05Z INFO Managed workloads, 3 of 17 cached workloads:
+2026-09-11T08:14:05Z INFO   run-platform-nonprod
+2026-09-11T08:14:05Z INFO     Deployment  run-dev
+2026-09-11T08:14:05Z INFO     Deployment  run-stage
+2026-09-11T08:14:05Z INFO     Deployment  run-test

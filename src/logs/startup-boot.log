@@ -1,0 +1,7 @@
+2026-09-11T08:14:02Z INFO Keelson 1.23 (package 1.23.1.36.1) booting in ns 'run-platform-nonprod'.
+2026-09-11T08:14:02Z INFO Keelson configuration from environment:
+2026-09-11T08:14:02Z INFO   scope                                      = namespace
+2026-09-11T08:14:02Z INFO   namespaces                                 = run-platform-nonprod
+2026-09-11T08:14:02Z INFO   config-mode                                = keelson
+2026-09-11T08:14:02Z INFO   watched-kinds                              = Deployment StatefulSet
+ELIDED plus 29 more configuration values not shown here

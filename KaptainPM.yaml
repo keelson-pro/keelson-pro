@@ -1,0 +1,22 @@
+apiVersion: kaptain.org/1.30
+kind: basic-quality-and-versioning
+metadata:
+  description: "keelson.pro website - static site sources assembled, published to the gh-pages branch, and attached to a GitHub Release."
+
+spec:
+  layers:
+    - ghcr.io/kube-kaptain/layer/layer-github-flow-strict:[1.4]
+  platform:
+    githubActions:
+      release:
+        verbatimFiles: kaptain-out/site-build/keelson-pro-site.tgz
+        notesFile: kaptain-out/site-build/release-notes.md
+  main:
+    hooks:
+      preTaggingTests: .github/bin/check-sources.bash
+      postVersionsAndNaming: .github/bin/build-and-publish-site.bash
+  global:
+    release:
+      versioning:
+        strategy: git-auto-closest-highest
+        maxParts: 2

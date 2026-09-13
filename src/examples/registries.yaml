@@ -1,0 +1,29 @@
+# mounted from the keelson ConfigMap at /configmap/registries.yaml
+registries:
+  # Cloud identity, nothing to store and nothing to rotate
+  123.dkr.ecr.us-east-1.amazonaws.com:
+    auth-mode: aws
+  europe-docker.pkg.dev:
+    auth-mode: gcp
+  myregistry.azurecr.io:
+    auth-mode: azure
+  # Auto secret name and key, by convention
+  ghcr.io:
+    # Reads from the same namespace Keelson is in
+    auth-mode: secret # secret `ghcr.io` .auth key `ghcr.io`
+  reg.example:5000:
+    auth-mode: secret # secret `reg.example-5000` .auth key `reg.example:5000`
+    namespace: run-stage
+  # Mixed configuration
+  reg.example:5001:
+    auth-mode: secret # .auth key `reg.example:5001`
+    secret-name-override: shared-pull-creds
+  reg.example:5002:
+    auth-mode: secret # secret `reg.example-5002`
+    secret-key-override: https://reg.example:5002/v1/
+  # Explicit
+  reg.example:5003:
+    auth-mode: secret
+    namespace: run-test
+    secret-name-override: reg-example-5003-creds
+    secret-key-override: https://reg.example:5003/v1/

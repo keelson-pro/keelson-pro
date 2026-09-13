@@ -1,0 +1,11 @@
+RAW keelson@keelson-7c9f8d4b6-nq2xv:/keelson/work$ ls -al log/
+RAW total 52449
+RAW drwxr-xr-x 2 keelson keelson     4096 Sep 11 07:52 .
+RAW drwxr-xr-x 5 keelson keelson     4096 Sep 10 21:38 ..
+RAW -rw-r--r-- 1 keelson keelson  1264893 Sep 11 09:52 keelson.log
+RAW -rw-r--r-- 1 keelson keelson 10485784 Sep 11 07:52 keelson.log.1
+RAW -rw-r--r-- 1 keelson keelson 10485802 Sep 11 05:47 keelson.log.2
+RAW -rw-r--r-- 1 keelson keelson 10485761 Sep 11 03:39 keelson.log.3
+RAW -rw-r--r-- 1 keelson keelson 10485790 Sep 11 01:36 keelson.log.4
+RAW -rw-r--r-- 1 keelson keelson 10485776 Sep 10 23:29 keelson.log.5
+RAW keelson@keelson-7c9f8d4b6-nq2xv:/keelson/work$

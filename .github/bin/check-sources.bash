@@ -99,6 +99,40 @@ fi
 printf '%s local link(s) resolve (%s supplied by the build).\n' \
     "${CHECKED}" "${SUPPLIED}"
 
+printf '\n== declared image sizes ==\n'
+# A regenerated screenshot changes size whenever its log text changes width.
+# A stale width/height reserves the wrong space, everything below it shifts on
+# load, and the keel stations end up measured against a layout that moved.
+BAD_DIMS=0
+CHECKED_IMGS=0
+while IFS= read -r line; do
+    img="${line%%|*}"
+    rest="${line#*|}"
+    want_w="${rest%%x*}"
+    want_h="${rest##*x}"
+    file="${STATIC_DIR}/${img}"
+    [[ -f "${file}" ]] || continue
+    CHECKED_IMGS=$((CHECKED_IMGS + 1))
+    # || true is load bearing: pipefail makes a no-match grep fail the
+    # assignment, and set -e then kills the script with no output at all.
+    real="$(file -b "${file}" | grep -oE '[0-9]+ x [0-9]+' | head -1 || true)"
+    real_w="${real%% x *}"
+    real_h="${real##* x }"
+    if [[ "${want_w}" != "${real_w}" || "${want_h}" != "${real_h}" ]]; then
+        printf 'Declared size wrong for %s: HTML says %sx%s, file is %sx%s\n' \
+            "${img}" "${want_w}" "${want_h}" "${real_w}" "${real_h}" >&2
+        BAD_DIMS=$((BAD_DIMS + 1))
+    fi
+done < <(grep -oE 'src="(img/[^"]+\.png)"[^>]*width="[0-9]+" height="[0-9]+"' \
+    "${STATIC_DIR}/index.html" \
+    | sed -E 's/src="([^"]+)".*width="([0-9]+)" height="([0-9]+)"/\1|\2x\3/' || true)
+
+if [[ ${BAD_DIMS} -gt 0 ]]; then
+    printf '%s image(s) declare a size that does not match the file.\n' "${BAD_DIMS}" >&2
+    exit 1
+fi
+printf '%s declared image size(s) match.\n' "${CHECKED_IMGS}"
+
 printf '\n== trailing newlines ==\n'
 # Empty files excluded: src/static/.nojekyll is deliberately zero bytes.
 #

@@ -15,7 +15,12 @@ const links = Array.from(menu?.querySelectorAll('a') ?? []);
 // Bays and the subsections inside them both get a station on the keel, in
 // document order. Subsections have no menu item of their own, so they inherit
 // their bay's: one item stays lit for a whole run of dots.
-const waypoints = Array.from(document.querySelectorAll('main .bay, main .sub'));
+// The hero is represented by its title rather than by its bay: a station at the
+// top of the bay sits level with the banner plate, lit before anything has been
+// read. The first dot now belongs to the wordmark.
+const waypoints = Array.from(
+  document.querySelectorAll('main .hero-title, main .bay:not(.bay-hero), main .sub'),
+);
 const stations = new Map(
   Array.from(document.querySelectorAll('.keel b'))
     .map((node) => [node.dataset.station, node]),
@@ -85,8 +90,15 @@ if (burger && menu) {
  * Position: nav highlight and keel stations
  * ----------------------------------------------------------------------- */
 
-const markCurrent = (id) => {
-  const active = navFor.get(id);
+/*
+ * Position is driven by scroll offset rather than by an IntersectionObserver.
+ * A bay that contains subsections stays intersecting for the whole run of them
+ * and, being topmost, would win every time: the subsection stations then all
+ * lit at once when the bay finally scrolled clear. Comparing against each
+ * waypoint's own top gives each one its turn, bays and subsections alike.
+ */
+const markCurrent = (index) => {
+  const active = navFor.get(waypoints[index]?.id);
   links.forEach((link) => {
     if (link === active) {
       link.setAttribute('aria-current', 'true');
@@ -97,48 +109,12 @@ const markCurrent = (id) => {
 
   // Every station up to and including the current one stays lit, so the keel
   // reads as progress along the hull rather than a single moving dot.
-  let passed = true;
-  waypoints.forEach((point) => {
-    stations.get(point.id)?.classList.toggle('lit', passed);
-    if (point.id === id) {
-      passed = false;
-    }
+  waypoints.forEach((point, i) => {
+    stations.get(point.id)?.classList.toggle('lit', i <= index);
   });
 };
 
 if (waypoints.length > 0) {
-  // Tracked rather than read back off the DOM: entries arrive in batches and
-  // report only what changed, so the running set is the only reliable picture
-  // of what is on screen.
-  const visible = new Set();
-
-  const spy = new IntersectionObserver((entries) => {
-    entries.forEach((entry) => {
-      if (entry.isIntersecting) {
-        visible.add(entry.target);
-      } else {
-        visible.delete(entry.target);
-      }
-    });
-
-    if (visible.size === 0) {
-      return;
-    }
-
-    // Topmost wins when two bays straddle the viewport, which matches what a
-    // reader would say they are looking at.
-    const current = Array.from(visible).sort((a, b) => pageTop(a) - pageTop(b))[0];
-    markCurrent(current.id);
-  }, {
-    // Discount the masthead, and require a band through the upper middle of the
-    // viewport so the highlight moves once per bay instead of flickering at
-    // every boundary.
-    rootMargin: `-${masthead?.offsetHeight ?? 0}px 0px -55% 0px`,
-    threshold: 0,
-  });
-
-  waypoints.forEach((point) => spy.observe(point));
-
   // Reveal on first sight, then stop watching. Nothing re-hides on scroll back.
   const reveal = new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
@@ -196,11 +172,16 @@ if (run) {
 
     const y = window.scrollY;
 
-    // Which leg of the journey we are on, and how far along it.
+    // Which leg of the journey we are on, and how far along it. The same index
+    // drives the lit stations and the nav, so the fill can never disagree with
+    // the dot it is running towards.
     let i = 0;
     while (i + 1 <= last && tops[i + 1] <= y) {
       i += 1;
     }
+
+    // Above the first waypoint nothing is lit: the banner has no station.
+    markCurrent(y >= tops[0] ? i : -1);
 
     let frac = 0;
     if (i < last) {
@@ -227,6 +208,16 @@ if (run) {
 
   window.addEventListener('scroll', onScroll, { passive: true });
   window.addEventListener('resize', relayout, { passive: true });
+
+  // An image that arrives late moves everything below it, and tops would be
+  // measured against a layout that no longer exists. The log shots declare
+  // their size so they reserve space, but the upstream diagrams cannot: the
+  // build fetches them and their dimensions are not ours to pin.
+  document.querySelectorAll('img').forEach((img) => {
+    if (!img.complete) {
+      img.addEventListener('load', relayout, { once: true });
+    }
+  });
 
   // Late webfonts and images reflow the document and move every offsetTop, so
   // the stations are placed again once everything has settled.

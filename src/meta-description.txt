@@ -1,3 +1,2 @@
-Keelson watches your registry and rolls your Kubernetes workloads forward on
-your terms. Scoped writes that respect field ownership, tags of any length, and
-logs you can actually read.
+Keelson watches your registry and upgrades Kubernetes workloads carefully,
+handling field ownership and tags of any length, while logging thoughtfully.

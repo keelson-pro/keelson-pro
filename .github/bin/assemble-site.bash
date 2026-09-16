@@ -25,6 +25,32 @@ PAGES_TAG="$(pages_tag_for "${VERSION}")"
 source "$(dirname "${BASH_SOURCE[0]}")/site-url.bash"
 SITE_URL="$(site_url)"
 
+# The title and the description are each used three times: once for the page
+# and once in each preview card. Kept as files so they are findable and
+# editable without going near the markup.
+#
+# Newlines fold to spaces so either can be wrapped in its file, and the
+# HTML-significant characters are escaped so a quote or an ampersand cannot
+# break the attribute it lands in.
+meta_text() {
+    local file="src/meta-$1.txt"
+    if [[ ! -f "${file}" ]]; then
+        printf 'Meta source not found: %s\n' "${file}" >&2
+        return 1
+    fi
+    tr '\n' ' ' < "${file}" \
+        | sed -e 's/  */ /g' -e 's/^ //' -e 's/ $//' \
+            -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' -e 's/"/\&quot;/g'
+}
+
+TITLE="$(meta_text title)"
+DESCRIPTION="$(meta_text description)"
+
+# sed reads & in a replacement as the whole match, so it has to be escaped
+# again after the HTML escaping put ampersands in.
+TITLE_SED="${TITLE//&/\\&}"
+DESCRIPTION_SED="${DESCRIPTION//&/\\&}"
+
 STATIC_DIR="src/static"
 PAYLOAD="${OUTPUT_SUB_PATH%/}/site-build/site"
 
@@ -66,6 +92,8 @@ while IFS= read -r file; do
         -e "s|@VERSION@|${VERSION}|g" \
         -e "s|@PAGES_TAG@|${PAGES_TAG}|g" \
         -e "s|@SITE_URL@|${SITE_URL}|g" \
+        -e "s|@TITLE@|${TITLE_SED}|g" \
+        -e "s|@DESCRIPTION@|${DESCRIPTION_SED}|g" \
         "${file}"
     rm -f "${file}.bak"
 done < <(find "${PAYLOAD}" -type f \( -name '*.html' -o -name '*.css' -o -name '*.js' \

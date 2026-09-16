@@ -1,0 +1,2 @@
+Keelson watches your registry and upgrades Kubernetes workloads carefully,
+handling field ownership and tags of any length, while logging thoughtfully.

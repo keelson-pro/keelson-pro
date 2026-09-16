@@ -20,6 +20,7 @@ REQUIRED=(
     "${STATIC_DIR}/index.html"
     "${STATIC_DIR}/.nojekyll"
     "${STATIC_DIR}/CNAME"
+    src/meta-description.txt
     src/release-notes.md
     src/pages-release-notes.md
     src/pages-README.md

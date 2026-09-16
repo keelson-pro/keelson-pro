@@ -1,0 +1,3 @@
+Keelson watches your registry and rolls your Kubernetes workloads forward on
+your terms. Scoped writes that respect field ownership, tags of any length, and
+logs you can actually read.

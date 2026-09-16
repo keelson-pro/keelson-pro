@@ -25,6 +25,24 @@ PAGES_TAG="$(pages_tag_for "${VERSION}")"
 source "$(dirname "${BASH_SOURCE[0]}")/site-url.bash"
 SITE_URL="$(site_url)"
 
+# One line of prose used three times, as the page description and in both
+# preview cards. Kept as a file so it is findable and editable without going
+# near the markup. Newlines are folded to spaces so it can be wrapped in the
+# file, and the HTML-significant characters are escaped so a quote or an
+# ampersand in it cannot break the attribute it lands in.
+DESCRIPTION_FILE="src/meta-description.txt"
+if [[ ! -f "${DESCRIPTION_FILE}" ]]; then
+    printf 'Description source not found: %s\n' "${DESCRIPTION_FILE}" >&2
+    exit 1
+fi
+DESCRIPTION="$(tr '\n' ' ' < "${DESCRIPTION_FILE}" \
+    | sed -e 's/  */ /g' -e 's/^ //' -e 's/ $//' \
+    -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g' -e 's/"/\&quot;/g')"
+
+# sed reads & in a replacement as the whole match, so it has to be escaped
+# again after the HTML escaping put ampersands in.
+DESCRIPTION_SED="${DESCRIPTION//&/\\&}"
+
 STATIC_DIR="src/static"
 PAYLOAD="${OUTPUT_SUB_PATH%/}/site-build/site"
 
@@ -66,6 +84,7 @@ while IFS= read -r file; do
         -e "s|@VERSION@|${VERSION}|g" \
         -e "s|@PAGES_TAG@|${PAGES_TAG}|g" \
         -e "s|@SITE_URL@|${SITE_URL}|g" \
+        -e "s|@DESCRIPTION@|${DESCRIPTION_SED}|g" \
         "${file}"
     rm -f "${file}.bak"
 done < <(find "${PAYLOAD}" -type f \( -name '*.html' -o -name '*.css' -o -name '*.js' \

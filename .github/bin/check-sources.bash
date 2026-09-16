@@ -69,6 +69,8 @@ while IFS= read -r page; do
     while IFS= read -r link; do
         case "${link}" in
             ''|'#'*|http://*|https://*|//*|mailto:*|tel:*|data:*) continue ;;
+            # A build-time token resolves to an absolute URL, not a path.
+            '@'*) continue ;;
         esac
         # Drop any fragment or query before resolving to a path on disk.
         target="${link%%#*}"

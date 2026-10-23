@@ -343,15 +343,16 @@
           that validation to fail. By default Keelson matches the existing
           ownership when it modifies the image field leaving it exactly how it
           was found. However it's also reasonable to want Keelson to say it
-          changed the field itself, so that's an option too. Regardless, every
-          write is scoped to the image field alone, so nothing else on the
+          changed the field itself, so that's an option too. Regardless, only
+          the image ever changes: anything else Keelson writes back is the
+          workload's own live values, sent unchanged, so nothing else on the
           workload is at risk regardless of what else manages it.
         </p>
 
         <div class="spec">
-          <div><code>mimic</code><span>applies as the field's existing owner, the default</span></div>
-          <div><code>patch</code><span>a strategic-merge patch, attributed to Keelson</span></div>
-          <div><code>claim</code><span>applies as Keelson, taking ownership of the field</span></div>
+          <div><code>mimic</code><span>writes as the image's existing owner, the default</span></div>
+          <div><code>claim-patch</code><span>a patch of the image alone, attributed to Keelson</span></div>
+          <div><code>claim-apply</code><span>a server-side apply as Keelson, taking ownership of the image</span></div>
         </div>
       </div>
 

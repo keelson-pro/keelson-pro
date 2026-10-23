@@ -2,7 +2,7 @@
 
 This branch is what GitHub Pages serves at https://keelson.pro.
 
-This tree is tagged `42.1.4`, published from release `1.4` on `main`.
+This tree is tagged `42.1.5`, published from release `1.5` on `main`.
 The tag is released to make it immutable, so it will always serve what it
 served on the day it shipped.
 
